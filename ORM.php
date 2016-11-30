@@ -78,9 +78,11 @@ abstract class ORM
         $this->db->doQuery($sql);
 
         if(!$this->db->existResult())
-            return $this->insert();
+            $id = $this->insert();
+        else
+            $id = $this->update();
 
-        return $this->update();
+        return $id;
     }
 
 
@@ -202,12 +204,43 @@ abstract class ORM
         return false;
     }
 
+    /** Devuelve el objeto dada una clausula where
+     * false en caso de no existir
+     * @param where
+     * @param $db opcional objeto a usar en la bd
+     * return Object
+     */
+    public static function where($where, $db = null)
+    {
+        if(!$db)
+            $db = new DataBase();
+
+        $retorno = false;
+        $called_class_name = get_called_class();
+        $new_obj = new $called_class_name($db);
+
+        $sql = "SELECT * FROM $new_obj->tablename WHERE $where";
+        $res = $db->doQuery($sql);
+
+        if($db->existResult($res))
+        {
+            $object = $db->fetchObject($res);
+
+            foreach ( $object as $field => $value ) {
+                $new_obj->{$field} = $value;
+            }
+
+            return $new_obj;
+        }
+        //$db->logLastQuery();
+
+        return false;
+    }
+
     /** Devuelve el objeto dado su id
      * false en caso de no existir
      * @param column
      * @param value
-     * @param $tablename
-     * @param $called_class_name
      * @param $db opcional objeto a usar en la bd
      * return Busqueda
      */
